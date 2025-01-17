@@ -1,44 +1,51 @@
 {
     "bullseye_amd64": {
-        "Key": "20230329T085712Z-0",
-        "Sha1Sum": "39d343162ed5ed1cf5337e49917321e39eb424c7",
+        "Key": "20230611T210420Z-2",
+        "Sha256Sum": "7c93e71bf9c4cd0825aa59fb2479054d981e36ba9be34ecf4c1d73051cae40fe",
         "SysrootDir": "debian_bullseye_amd64-sysroot",
-        "Tarball": "debian_bullseye_amd64_sysroot.tar.xz"
-    },
-    "bullseye_arm": {
-        "Key": "20230329T085712Z-0",
-        "Sha1Sum": "4c378886e1fcab051e99c5e8c4f0b66f2f3fb738",
-        "SysrootDir": "debian_bullseye_arm-sysroot",
-        "Tarball": "debian_bullseye_arm_sysroot.tar.xz"
+        "Tarball": "debian_bullseye_amd64_sysroot.tar.xz",
+        "URL": "https://dev-cdn.electronjs.org/linux-sysroots"
     },
     "bullseye_arm64": {
-        "Key": "20230329T085712Z-0",
-        "Sha1Sum": "2354ab6674a0725d0c4f304b47f908eba6e3b8c7",
+        "Key": "20230611T210420Z-2",
+        "Sha256Sum": "d649177e37aef2c043e54e670e42934f18558c0e730c1b854719ca7463e2b1eb",
         "SysrootDir": "debian_bullseye_arm64-sysroot",
-        "Tarball": "debian_bullseye_arm64_sysroot.tar.xz"
+        "Tarball": "debian_bullseye_arm64_sysroot.tar.xz",
+        "URL": "https://dev-cdn.electronjs.org/linux-sysroots"
     },
     "bullseye_armel": {
-        "Key": "20230329T085712Z-0",
-        "Sha1Sum": "933d6944cabe6bf2f9bc667ca52b258b52cd05e9",
+        "Key": "20230329T085712Z-1",
+        "Sha256Sum": "86fd328cf923eeb81bcbdbdb522f73ab3f3750c272201d3f4258bc95a87d2568",
         "SysrootDir": "debian_bullseye_armel-sysroot",
-        "Tarball": "debian_bullseye_armel_sysroot.tar.xz"
+        "Tarball": "debian_bullseye_armel_sysroot.tar.xz",
+        "URL": "https://dev-cdn.electronjs.org/linux-sysroots"
+    },
+    "bullseye_armhf": {
+        "Key": "20230611T210420Z-2",
+        "Sha256Sum": "fe3b9203e30e70f533776d565501bc1e3d4ebf6eeb909b2c2bfca0df807e1be0",
+        "SysrootDir": "debian_bullseye_armhf-sysroot",
+        "Tarball": "debian_bullseye_armhf_sysroot.tar.xz",
+        "URL": "https://dev-cdn.electronjs.org/linux-sysroots"
     },
     "bullseye_i386": {
-        "Key": "20230329T085712Z-0",
-        "Sha1Sum": "86c07fcc29a500e6ff24962c811ba82f806df00c",
+        "Key": "20230611T210420Z-2",
+        "Sha256Sum": "4efcb1870129da1ad5c3b634903a4efcc0ca9abd67dd5a993cca144ea9b5d31f",
         "SysrootDir": "debian_bullseye_i386-sysroot",
-        "Tarball": "debian_bullseye_i386_sysroot.tar.xz"
-    },
-    "bullseye_mips": {
-        "Key": "20230329T085712Z-0",
-        "Sha1Sum": "1b44b9ddfd3571acc17036866e0373120fd9aa03",
-        "SysrootDir": "debian_bullseye_mips-sysroot",
-        "Tarball": "debian_bullseye_mips_sysroot.tar.xz"
+        "Tarball": "debian_bullseye_i386_sysroot.tar.xz",
+        "URL": "https://dev-cdn.electronjs.org/linux-sysroots"
     },
     "bullseye_mips64el": {
-        "Key": "20230329T085712Z-0",
-        "Sha1Sum": "cd0803ae938dd75247f474feb299bcaa74fa2290",
+        "Key": "20230611T210420Z-2",
+        "Sha256Sum": "c3a3bf3b0aa40ec90747c951942d40077ff6796b336818eaba6fa21564249a00",
         "SysrootDir": "debian_bullseye_mips64el-sysroot",
-        "Tarball": "debian_bullseye_mips64el_sysroot.tar.xz"
+        "Tarball": "debian_bullseye_mips64el_sysroot.tar.xz",
+        "URL": "https://dev-cdn.electronjs.org/linux-sysroots"
+    },
+    "bullseye_mipsel": {
+        "Key": "20230611T210420Z-2",
+        "Sha256Sum": "564de884ed1810e1cf3a20d94edfa21972ac2be9568bf1526d093c31f15ef225",
+        "SysrootDir": "debian_bullseye_mipsel-sysroot",
+        "Tarball": "debian_bullseye_mipsel_sysroot.tar.xz",
+        "URL": "https://dev-cdn.electronjs.org/linux-sysroots"
     }
 }

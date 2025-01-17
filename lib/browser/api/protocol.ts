@@ -1,4 +1,5 @@
 import { ProtocolRequest, session } from 'electron/main';
+
 import { createReadStream } from 'fs';
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
@@ -9,7 +10,7 @@ const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } = process._l
 const ERR_FAILED = -2;
 const ERR_UNEXPECTED = -9;
 
-const isBuiltInScheme = (scheme: string) => scheme === 'http' || scheme === 'https';
+const isBuiltInScheme = (scheme: string) => ['http', 'https', 'file'].includes(scheme);
 
 function makeStreamFromPipe (pipe: any): ReadableStream {
   const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
@@ -18,7 +19,7 @@ function makeStreamFromPipe (pipe: any): ReadableStream {
       try {
         const rv = await pipe.read(buf);
         if (rv > 0) {
-          controller.enqueue(buf.subarray(0, rv));
+          controller.enqueue(buf.slice(0, rv));
         } else {
           controller.close();
         }
@@ -29,6 +30,21 @@ function makeStreamFromPipe (pipe: any): ReadableStream {
   });
 }
 
+function makeStreamFromFileInfo ({
+  filePath,
+  offset = 0,
+  length = -1
+}: {
+  filePath: string;
+  offset?: number;
+  length?: number;
+}): ReadableStream {
+  return Readable.toWeb(createReadStream(filePath, {
+    start: offset,
+    end: length >= 0 ? offset + length : undefined
+  }));
+}
+
 function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): RequestInit['body'] {
   if (!uploadData) return null;
   // Optimization: skip creating a stream if the request is just a single buffer.
@@ -37,27 +53,59 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
   const chunks = [...uploadData] as any[]; // TODO: types are wrong
   let current: ReadableStreamDefaultReader | null = null;
   return new ReadableStream({
-    pull (controller) {
+    async pull (controller) {
       if (current) {
-        current.read().then(({ done, value }) => {
+        const { done, value } = await current.read();
+        // (done => value === undefined) as per WHATWG spec
+        if (done) {
+          current = null;
+          return this.pull!(controller);
+        } else {
           controller.enqueue(value);
-          if (done) current = null;
-        }, (err) => {
-          controller.error(err);
-        });
+        }
       } else {
         if (!chunks.length) { return controller.close(); }
         const chunk = chunks.shift()!;
-        if (chunk.type === 'rawData') { controller.enqueue(chunk.bytes); } else if (chunk.type === 'file') {
-          current = Readable.toWeb(createReadStream(chunk.filePath, { start: chunk.offset ?? 0, end: chunk.length >= 0 ? chunk.offset + chunk.length : undefined })).getReader();
-          this.pull!(controller);
+        if (chunk.type === 'rawData') {
+          controller.enqueue(chunk.bytes);
+        } else if (chunk.type === 'file') {
+          current = makeStreamFromFileInfo(chunk).getReader();
+          return this.pull!(controller);
         } else if (chunk.type === 'stream') {
           current = makeStreamFromPipe(chunk.body).getReader();
-          this.pull!(controller);
+          return this.pull!(controller);
+        } else if (chunk.type === 'blob') {
+          // Note that even though `getBlobData()` is a `Session` API, it doesn't
+          // actually use the `Session` context. Its implementation solely relies
+          // on global variables which allows us to implement this feature without
+          // knowledge of the `Session` associated with the current request by
+          // always pulling `Blob` data out of the default `Session`.
+          controller.enqueue(await session.defaultSession.getBlobData(chunk.blobUUID));
+        } else {
+          throw new Error(`Unknown upload data chunk type: ${chunk.type}`);
         }
       }
     }
   }) as RequestInit['body'];
+}
+
+function validateResponse (res: Response) {
+  if (!res || typeof res !== 'object') return false;
+
+  if (res.type === 'error') return true;
+
+  const exists = (key: string) => Object.hasOwn(res, key);
+
+  if (exists('status') && typeof res.status !== 'number') return false;
+  if (exists('statusText') && typeof res.statusText !== 'string') return false;
+  if (exists('headers') && typeof res.headers !== 'object') return false;
+
+  if (exists('body')) {
+    if (typeof res.body !== 'object') return false;
+    if (res.body !== null && !(res.body instanceof ReadableStream)) return false;
+  }
+
+  return true;
 }
 
 Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, handler: (req: Request) => Response | Promise<Response>) {
@@ -65,21 +113,26 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
   const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
     try {
       const body = convertToRequestBody(preq.uploadData);
+      const headers = new Headers(preq.headers);
+      if (headers.get('origin') === 'null') {
+        headers.delete('origin');
+      }
       const req = new Request(preq.url, {
-        headers: preq.headers,
+        headers,
         method: preq.method,
         referrer: preq.referrer,
         body,
         duplex: body instanceof ReadableStream ? 'half' : undefined
       } as any);
       const res = await handler(req);
-      if (!res || typeof res !== 'object') {
+      if (!validateResponse(res)) {
         return cb({ error: ERR_UNEXPECTED });
-      }
-      if (res.type === 'error') { cb({ error: ERR_FAILED }); } else {
+      } else if (res.type === 'error') {
+        cb({ error: ERR_FAILED });
+      } else {
         cb({
           data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
-          headers: Object.fromEntries(res.headers),
+          headers: res.headers ? Object.fromEntries(res.headers) : {},
           statusCode: res.status,
           statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType

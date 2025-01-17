@@ -23,13 +23,13 @@ To set your custom dock menu, you need to use the
 [`app.dock.setMenu`](../api/dock.md#docksetmenumenu-macos) API,
 which is only available on macOS.
 
-```javascript fiddle='docs/fiddles/features/macos-dock-menu'
-const { app, BrowserWindow, Menu } = require('electron')
+```fiddle docs/fiddles/features/macos-dock-menu
+const { app, BrowserWindow, Menu } = require('electron/main')
 
-const createWindow = () => {
+function createWindow () {
   const win = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 600
   })
 
   win.loadFile('index.html')
@@ -66,7 +66,6 @@ app.on('activate', () => {
     createWindow()
   }
 })
-
 ```
 
 After launching the Electron application, right click the application icon.

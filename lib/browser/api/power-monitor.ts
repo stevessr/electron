@@ -4,10 +4,11 @@ const {
   createPowerMonitor,
   getSystemIdleState,
   getSystemIdleTime,
+  getCurrentThermalState,
   isOnBatteryPower
 } = process._linkedBinding('electron_browser_power_monitor');
 
-class PowerMonitor extends EventEmitter {
+class PowerMonitor extends EventEmitter implements Electron.PowerMonitor {
   constructor () {
     super();
     // Don't start the event source until both a) the app is ready and b)
@@ -38,6 +39,10 @@ class PowerMonitor extends EventEmitter {
 
   getSystemIdleState (idleThreshold: number) {
     return getSystemIdleState(idleThreshold);
+  }
+
+  getCurrentThermalState () {
+    return getCurrentThermalState();
   }
 
   getSystemIdleTime () {
