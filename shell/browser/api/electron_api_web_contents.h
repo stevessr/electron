@@ -219,6 +219,10 @@ class WebContents final : public ExclusiveAccessContext,
   bool RemoveNavigationEntryAtIndex(int index);
   std::vector<content::NavigationEntry*> GetHistory() const;
   void ClearHistory();
+  void RestoreHistory(v8::Isolate* isolate,
+                      gin_helper::ErrorThrower thrower,
+                      int index,
+                      const std::vector<v8::Local<v8::Value>>& entries);
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
@@ -389,29 +393,6 @@ class WebContents final : public ExclusiveAccessContext,
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
 
-  // this.emit(name, new Event(sender, message), args...);
-  template <typename... Args>
-  bool EmitWithSender(const std::string_view name,
-                      content::RenderFrameHost* frame,
-                      electron::mojom::ElectronApiIPC::InvokeCallback callback,
-                      Args&&... args) {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope handle_scope(isolate);
-
-    gin::Handle<gin_helper::internal::Event> event =
-        MakeEventWithSender(isolate, frame, std::move(callback));
-    if (event.IsEmpty())
-      return false;
-    EmitWithoutEvent(name, event, std::forward<Args>(args)...);
-    return event->GetDefaultPrevented();
-  }
-
-  gin::Handle<gin_helper::internal::Event> MakeEventWithSender(
-      v8::Isolate* isolate,
-      content::RenderFrameHost* frame,
-      electron::mojom::ElectronApiIPC::InvokeCallback callback);
-
   WebContents* embedder() { return embedder_; }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -444,35 +425,9 @@ class WebContents final : public ExclusiveAccessContext,
     fullscreen_frame_ = rfh;
   }
 
-  // mojom::ElectronApiIPC
-  void Message(bool internal,
-               const std::string& channel,
-               blink::CloneableMessage arguments,
-               content::RenderFrameHost* render_frame_host);
-  void Invoke(bool internal,
-              const std::string& channel,
-              blink::CloneableMessage arguments,
-              electron::mojom::ElectronApiIPC::InvokeCallback callback,
-              content::RenderFrameHost* render_frame_host);
-  void ReceivePostMessage(const std::string& channel,
-                          blink::TransferableMessage message,
-                          content::RenderFrameHost* render_frame_host);
-  void MessageSync(
-      bool internal,
-      const std::string& channel,
-      blink::CloneableMessage arguments,
-      electron::mojom::ElectronApiIPC::MessageSyncCallback callback,
-      content::RenderFrameHost* render_frame_host);
-  void MessageHost(const std::string& channel,
-                   blink::CloneableMessage arguments,
-                   content::RenderFrameHost* render_frame_host);
-
   // mojom::ElectronWebContentsUtility
   void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);
   void SetTemporaryZoomLevel(double level);
-  void DoGetZoomLevel(
-      electron::mojom::ElectronWebContentsUtility::DoGetZoomLevelCallback
-          callback);
 
   void SetImageAnimationPolicy(const std::string& new_policy);
 
@@ -612,6 +567,8 @@ class WebContents final : public ExclusiveAccessContext,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
   void LostPointerLock() override;
+  bool IsWaitingForPointerLockPrompt(
+      content::WebContents* web_contents) override;
   void OnRequestKeyboardLock(content::WebContents* web_contents,
                              bool esc_key_locked,
                              bool allowed);
